@@ -1,7 +1,7 @@
-import Funnelling.Declarations
-import Funnelling.Typing
+import Funnelling.Low.Declarations
+import Funnelling.Low.Typing
 
-namespace Funnelling
+namespace Funnelling.Low
 
 inductive ECtx where
   | hole
@@ -111,4 +111,4 @@ inductive Steps (d : Decls) : Expr -> Expr -> Prop
   | refl {e} : Steps d e e
   | step {e e' e''} : Step d e e' -> Steps d e' e'' -> Steps d e e''
 
-end Funnelling
+end Funnelling.Low

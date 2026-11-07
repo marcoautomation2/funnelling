@@ -1,6 +1,6 @@
-import Funnelling.Declarations
+import Funnelling.Low.Declarations
 
-namespace Funnelling
+namespace Funnelling.Low
 
 inductive Sub (d : Decls) (delta : Bounds) : Ty -> Ty -> Prop
   | refl {t} : Sub d delta t t
@@ -164,4 +164,4 @@ def ClassOk (d : Decls) (java : Bool) (dec : Dec) : Prop :=
 def ProgOk (d : Decls) (java : Bool) (e : Expr) : Prop :=
   (forall dec, List.Mem dec d -> ClassOk d java dec) /\ exists t, Typing d java [] [] e t
 
-end Funnelling
+end Funnelling.Low

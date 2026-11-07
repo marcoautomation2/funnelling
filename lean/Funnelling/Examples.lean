@@ -2,7 +2,7 @@ import Funnelling.Soundness
 
 namespace Funnelling.Examples
 
-open Funnelling
+open Funnelling.High
 
 def obj : Ty := .cls objectName []
 def tA : Ty := .cls "A" []

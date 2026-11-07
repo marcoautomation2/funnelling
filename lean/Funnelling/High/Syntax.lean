@@ -1,4 +1,4 @@
-namespace Funnelling
+namespace Funnelling.High
 
 abbrev Name := String
 
@@ -118,4 +118,4 @@ def Funnel.isGround : Funnel -> Bool
   | .ground g => g.isGround
   | .funnel _ => false
 
-end Funnelling
+end Funnelling.High

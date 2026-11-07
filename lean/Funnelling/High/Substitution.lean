@@ -1,6 +1,6 @@
-import Funnelling.Syntax
+import Funnelling.High.Syntax
 
-namespace Funnelling
+namespace Funnelling.High
 
 abbrev TSubst := List (Prod Name Ty)
 
@@ -164,4 +164,4 @@ def Method.freshenList (rv rt : Renaming) : List Name -> List Method -> Option (
     pure (m' :: ms', ns)
 end
 
-end Funnelling
+end Funnelling.High

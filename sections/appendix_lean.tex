@@ -44,20 +44,28 @@ The file \texttt{lean/lean-toolchain} selects Lean 4.35.0: elan runs that versio
 The project depends on Mathlib v4.35.0, which brings Batteries and Aesop; \texttt{lake exe cache get} downloads Mathlib already compiled.
 The current files import only the core library of Lean.
 \texttt{lake build} in the folder \texttt{lean} checks all the files.
+The formalization has two levels.
+The \emph{high level}, \leanfile{High}, follows the metarules of the paper as closely as possible; Section~\ref{app:lean:sidebyside} compares it with the paper.
+The \emph{low level}, \leanfile{Low}, is free: it can change in any way that makes the proofs easier, and several low levels can be tried, without changing the high level.
+The low level starts as a copy of the high level, with its own datatypes and functions.
 The files are:
 \begin{itemize}
-\item \leanfile{Syntax.lean}: types, funnels, expressions, methods, declarations, class declarations $K$.
-\item \leanfile{Substitution.lean}: substitution of type variables and of variables, and the renaming used by $\mathsf{fresh}$.
-\item \leanfile{Declarations.lean}: $\mathsf{declared}$, $\mathsf{scope}$, the pairing, $\mathrm{generic}$, $M\in C$, $\mathsf{typeOf}$, values, $\mathsf{fresh}$.
-\item \leanfile{WellFormed.lean}: the well-formedness requirements A1-A11.
-\item \leanfile{Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
-\item \leanfile{Reduction.lean}: evaluation contexts and the reduction.
-\item \leanfile{Soundness.lean}: the soundness statements.
-\item \leanfile{Examples.lean}: the validation examples.
+\item \leanfile{High/Syntax.lean}: types, funnels, expressions, methods, declarations, class declarations $K$.
+\item \leanfile{High/Substitution.lean}: substitution of type variables and of variables, and the renaming used by $\mathsf{fresh}$.
+\item \leanfile{High/Declarations.lean}: $\mathsf{declared}$, $\mathsf{scope}$, the pairing, $\mathrm{generic}$, $M\in C$, $\mathsf{typeOf}$, values, $\mathsf{fresh}$.
+\item \leanfile{High/WellFormed.lean}: the well-formedness requirements A1-A11.
+\item \leanfile{High/Typing.lean}: subtyping, kinding, checked casts, $\mathsf{overrideOk}$, $\mathsf{consistent}$, typing, method, class and program typing.
+\item \leanfile{High/Reduction.lean}: evaluation contexts and the reduction.
+\item \leanfile{Low/*.lean}: the same files for the low level, and \leanfile{Low/Soundness.lean}, progress and preservation of the low level.
+\item \leanfile{Translation.lean}: the translation from the high level to the low level.
+\item \leanfile{Adequacy.lean}: the lemmas that relate the two levels through the translation.
+\item \leanfile{Soundness.lean}: the soundness statements of the paper, on the high level.
+\item \leanfile{Examples.lean}: the validation examples, on the high level.
 \end{itemize}
 Lean accepts all the files.
-The three theorems \texttt{stepWellFormed}, \texttt{progress} and \texttt{preservation} are stated with \texttt{sorry}.
-The corollary \texttt{typeSoundness} is proved from those three theorems.
+The high-level \texttt{progress} and \texttt{preservation} are proved from the low-level ones through the adequacy lemmas.
+The high-level \texttt{typeSoundness} is proved from \texttt{progress}, \texttt{preservation} and \texttt{stepWellFormed}.
+The low-level \texttt{progress} and \texttt{preservation}, the six adequacy lemmas and \texttt{stepWellFormed} are stated with \texttt{sorry}.
 Section~\ref{app:lean:examples} lists which validation examples are proved and which are stated with \texttt{sorry}.
 The mini proof that checked the installation is not in the repository:
 it proved $a+b=b+a$ with \texttt{omega}, $\mathsf{Even}\ 4$ for an inductive predicate $\mathsf{Even}$, $\neg\mathsf{Even}\ 1$ by \texttt{cases}, and evaluated an expression with \texttt{\#eval}.
@@ -100,7 +108,7 @@ The proofs need the lemma \texttt{Ty.beq t t' = true <-> t = t'}.
 
 \subsection{Side by Side: Paper and Lean}
 \label{app:lean:sidebyside}
-Each block below shows, on the left, a piece of the formalism of the paper, with the minimal text of the paper that the piece needs; on the right, the Lean definitions of the same concepts; under them, the words that map one side to the other, and the differences beyond Section~\ref{app:lean:common}.
+Each block below shows, on the left, a piece of the formalism of the paper, with the minimal text of the paper that the piece needs; on the right, the Lean definitions of the same concepts in the high level \texttt{Funnelling.High}; under them, the words that map one side to the other, and the differences beyond Section~\ref{app:lean:common}.
 
 \subsubsection{Syntax}
 
@@ -1429,7 +1437,27 @@ theorem typeSoundness {d e0 e t} (hd : DeclsOk d) (he0 : wfExpr e0 = true)
 \texttt{DeclsOk d} is the global \decls such that $\mathsf{Dec}\gap\mathrm{Ok}$ for every $\mathsf{Dec}\in\decls$, together with A1-A11 on \decls.
 \texttt{stepWellFormed} has no counterpart in the paper (Section~\ref{app:lean:common}).
 \texttt{typeSoundness} is proved by induction on \texttt{Steps}, from the other three theorems.
-The planned proofs of the other three theorems are:
+\texttt{progress} and \texttt{preservation} are proved from the low-level theorems with the same names, through these adequacy lemmas:
+\begin{lstlisting}[language=lean,basicstyle=\scriptsize\ttfamily]
+theorem isValue_tr {e : High.Expr} : (trExpr e).isValue = e.isValue
+theorem wfExpr_tr {d : High.Decls} {e : High.Expr} (hd : High.wfDecls d = true)
+    (he : High.wfExpr e = true) : Low.wfExpr (trExpr e) = true
+theorem declsOk_tr {d : High.Decls} (hd : High.wfDecls d = true)
+    (hok : forall dec, List.Mem dec d -> High.ClassOk d false dec) :
+    Low.DeclsOk (trDecls d)
+theorem typing_tr {d : High.Decls} {e : High.Expr} {t : High.Ty} (hd : High.wfDecls d = true) :
+    High.Typing d false [] [] e t <-> Low.Typing (trDecls d) false [] [] (trExpr e) (trTy t)
+theorem step_tr {d : High.Decls} {e e' : High.Expr} (hd : High.wfDecls d = true)
+    (he : High.wfExpr e = true) (hs : High.Step d e e') :
+    Low.Step (trDecls d) (trExpr e) (trExpr e')
+theorem step_back {d : High.Decls} {e : High.Expr} {e'' : Low.Expr} (hd : High.wfDecls d = true)
+    (he : High.wfExpr e = true) (hs : Low.Step (trDecls d) (trExpr e) e'') :
+    exists e', High.Step d e e' /\ trExpr e' = e''
+\end{lstlisting}
+The adequacy lemmas, the translation and the low level can change together.
+What must not change is the high level and the statements of \leanfile{Soundness.lean}.
+While the two levels are identical, each adequacy lemma is an induction showing that the translation commutes with every function and preserves every judgement.
+The planned proofs of the low-level \texttt{progress} and \texttt{preservation}, and of \texttt{stepWellFormed}, are:
 \begin{enumerate}
 \item \textbf{Basic lemmas.} \texttt{Ty.beq} is equality; \texttt{lookup} on a substitution built by \texttt{mkSubst}; by A1, \texttt{declaredKs}, \texttt{scope} and \texttt{generic} have one entry per class name.
 \item \textbf{Renaming.} \texttt{Expr.freshen} renames bound names consistently, so typing, kinding and well-formedness are invariant under it; the result binds only names of \texttt{ns}.
@@ -1450,7 +1478,7 @@ The proof uses that the chain of superclasses is unique and that $\pl{X}\subsete
 
 \subsection{Validation Examples}
 \label{app:lean:examples}
-\leanfile{Examples.lean} defines the class tables below and the examples.
+\leanfile{Examples.lean} defines the class tables below and the examples, on the high level.
 A Lean theorem marked \emph{proved} is accepted by Lean without \texttt{sorry}; a theorem marked \emph{stated} has \texttt{sorry}, and needs the inversion lemmas of Section~\ref{app:lean:statements}.
 \begin{lstlisting}
 class Object<> extends Object<>{}

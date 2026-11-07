@@ -1,6 +1,6 @@
-import Funnelling.Substitution
+import Funnelling.Low.Substitution
 
-namespace Funnelling
+namespace Funnelling.Low
 
 def pairing (delta : Bounds) : List Funnel -> List Ty -> Option (Prod Bounds (List Ty))
   | [], [] => some ([], [])
@@ -136,4 +136,4 @@ def Fresh (avoid : List Name) (e e' : Expr) : Prop :=
 def FreshM (avoid : List Name) (mt mt' : Method) : Prop :=
   exists ns, Method.freshen [] [] ns mt = some (mt', []) /\ freshNames avoid ns = true
 
-end Funnelling
+end Funnelling.Low
